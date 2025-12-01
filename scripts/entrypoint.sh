@@ -10,7 +10,7 @@ INSTANCE_ID=$(echo '$INFO' | jq -r .instance_id)
 echo 'INSTANCE_ID: $INSTANCE_ID'
 echo 'VPC Server App ID: $VPC_SERVER_APP_ID'
 
-RESPONSE=$(wget -qO- --header='x-dstack-target-app: $VPC_SERVER_APP_ID' --header='Host: vpc-server' ' DSTACK_MESH_URL/api/register?instance_id=$INSTANCE_ID&node_name=$NODE_NAME')
+RESPONSE=$(wget -qO- --header='x-dstack-target-app: $VPC_SERVER_APP_ID' --header='Host: vpc-server' '$DSTACK_MESH_URL/api/register?instance_id=$INSTANCE_ID&node_name=$NODE_NAME')
 
 PRE_AUTH_KEY=$(echo '$RESPONSE' | jq -r .pre_auth_key)
 VPC_SERVER_URL=$(echo '$RESPONSE' | jq -r .server_url)
