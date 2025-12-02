@@ -50,7 +50,16 @@ echo 'Tailscale connected successfully'
 echo 'Starting status updater (interval: 30s)...'
 
 while true; do
-	tailscale status --json > /shared/tailscale_status.json 2>/dev/null || echo 'Failed to get status' > /shared/tailscale_status.json
-	echo 'Status updated'
+	if tailscale status --json > /shared/tailscale_status.json 2>/dev/null; then
+		ONLINE_COUNT=$(jq '[.Peer | to_entries[] | select(.value.Online == true)] | length' /shared/tailscale_status.json)
+		echo "Status updated - Online peers: $ONLINE_COUNT"
+		if [ "$ONLINE_COUNT" -gt 0 ]; then
+			echo 'Online peers:'
+			jq -r '.Peer | to_entries[] | select(.value.Online == true) | "  - \(.value.HostName) (\(.value.AllowedIPs[0] // "no IP"))"' /shared/tailscale_status.json
+		fi
+	else
+		echo 'Failed to get status' > /shared/tailscale_status.json
+		echo 'Status updated - Failed to get tailscale status'
+	fi
 	sleep 30
 done
