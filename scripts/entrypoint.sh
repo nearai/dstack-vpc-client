@@ -22,8 +22,9 @@ RESPONSE=$(wget -qO- --header="x-dstack-target-app: $VPC_SERVER_APP_ID" --header
 
 PRE_AUTH_KEY=$(echo "$RESPONSE" | jq -r .pre_auth_key)
 VPC_SERVER_URL=$(echo "$RESPONSE" | jq -r .server_url)
+SHARED_KEY=$(echo "$RESPONSE" | jq -r .shared_key)
 
-if [ -z "$PRE_AUTH_KEY" ] || [ -z "$VPC_SERVER_URL" ]; then
+if [ -z "$PRE_AUTH_KEY" ] || [ -z "$VPC_SERVER_URL" ] || [ -z "$SHARED_KEY" ]; then
 	echo 'Error: Missing required fields in response'
 	echo "Response: $RESPONSE"
 	exit 1
@@ -45,6 +46,14 @@ tailscale up \
 	--accept-dns
 
 echo 'Tailscale connected successfully'
+
+ACTUAL_HOSTNAME=$(tailscale status --json 2>/dev/null | jq -r ".Self.DNSName" | sed "s/\.$//")
+TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
+
+# Write to /shared
+echo "$ACTUAL_HOSTNAME" > /shared/actual_hostname
+echo "$TAILSCALE_IP" > /shared/tailscale_ip
+echo "$SHARED_KEY" > /shared/shared_key
 
 # Start status updater
 echo 'Starting status updater (interval: 30s)...'
