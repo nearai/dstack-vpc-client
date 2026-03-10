@@ -12,7 +12,6 @@ echo "TUN_DEV_NAME: $TUN_DEV_NAME"
 
 # Start script
 echo 'Fetching instance info from dstack-mesh...'
-echo "wget -qO- $DSTACK_MESH_URL/info"
 INFO=$(wget -qO- $DSTACK_MESH_URL/info)
 INSTANCE_ID=$(echo "$INFO" | jq -r .instance_id)
 echo "INSTANCE_ID: $INSTANCE_ID"
@@ -58,17 +57,18 @@ echo "$SHARED_KEY" > /shared/shared_key
 # Start status updater
 echo 'Starting status updater (interval: 30s)...'
 
+PREV_COUNT=""
 while true; do
 	if tailscale status --json > /shared/tailscale_status.json 2>/dev/null; then
 		ONLINE_COUNT=$(jq '[.Peer | to_entries[] | select(.value.Online == true)] | length' /shared/tailscale_status.json)
-		echo "Status updated - Online peers: $ONLINE_COUNT"
-		if [ "$ONLINE_COUNT" -gt 0 ]; then
-			echo 'Online peers:'
-			jq -r '.Peer | to_entries[] | select(.value.Online == true) | "  - \(.value.HostName) (\(.value.AllowedIPs[0] // "no IP"))"' /shared/tailscale_status.json
+		if [ "$ONLINE_COUNT" != "$PREV_COUNT" ]; then
+			echo "Online peers: $ONLINE_COUNT"
+			PREV_COUNT="$ONLINE_COUNT"
 		fi
 	else
+		echo 'Failed to get tailscale status'
 		echo 'Failed to get status' > /shared/tailscale_status.json
-		echo 'Status updated - Failed to get tailscale status'
+		PREV_COUNT=""
 	fi
 	sleep 30
 done
