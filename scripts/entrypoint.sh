@@ -14,6 +14,10 @@ echo "TUN_DEV_NAME: $TUN_DEV_NAME"
 echo 'Fetching instance info from dstack-mesh...'
 INFO=$(wget -qO- $DSTACK_MESH_URL/info)
 INSTANCE_ID=$(echo "$INFO" | jq -r .instance_id)
+if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "null" ]; then
+	echo 'Error: dstack-mesh response is missing instance_id'
+	exit 1
+fi
 echo "INSTANCE_ID: $INSTANCE_ID"
 echo "VPC Server App ID: $VPC_SERVER_APP_ID"
 
@@ -50,6 +54,7 @@ ACTUAL_HOSTNAME=$(tailscale status --json 2>/dev/null | jq -r ".Self.DNSName" | 
 TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
 
 # Write to /shared
+echo "$INSTANCE_ID" > /shared/instance_id
 echo "$ACTUAL_HOSTNAME" > /shared/actual_hostname
 echo "$TAILSCALE_IP" > /shared/tailscale_ip
 echo "$SHARED_KEY" > /shared/shared_key
